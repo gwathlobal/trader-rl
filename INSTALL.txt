@@ -1,0 +1,26 @@
+== Compiling ==
+
+You need:
+* SBCL or CLISP
+* cl-store
+* lispbuilder-sdl
+
+Both cl-store and lispbuilder-sdl can be installed via quicklisp.
+
+Start your Common Lisp interpreter and execute:
+ 
+(asdf:oos 'asdf:load-op :trader-rl)
+
+Once everything is loaded, execute:
+
+(trader-rl:make-exec)
+
+This will create an executable with the name "trader-rl".
+
+Windows users need to rename it to "trader-rl.exe" and they are good to go.
+
+== Distribution ==
+
+To distribute the game, you need the following files placed to the directory where the executable is located:
+* SDL.dll
+* zlib1.dll
