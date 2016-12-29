@@ -97,13 +97,17 @@
 
 (defconstant +feature-type-palace+ 0)
 
+(defconstant +event-type-famine+ 0)
+
 (defparameter *item-types* (make-hash-table))
 (defparameter *settlements* (make-hash-table))
 (defparameter *traders* (make-hash-table))
 (defparameter *links* (make-hash-table))
 (defparameter *realms* (make-hash-table))
+(defparameter *events* (make-hash-table))
 (defparameter *quest-types* (make-hash-table))
 (defparameter *feature-types* (make-hash-table))
+(defparameter *event-types* (make-hash-table))
 
 (defparameter *player* nil)
 (defparameter *world* nil)

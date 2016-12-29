@@ -10,6 +10,8 @@
   (setf (gethash (id link) *links*) link)
   )
 
+;; ==============================
+
 (defclass settlement ()
   ((id :initform nil :initarg :id :accessor id)
    (x :initform 0 :initarg :x :accessor x)
@@ -25,6 +27,8 @@
    (market :initform (make-hash-table) :accessor market)
 
    (features :initform () :initarg :features :accessor features) ;; list of +feature-type-...+ constants
+
+   (events :initform (make-hash-table) :accessor events)
    
    (realm-id :initform nil :initarg :realm-id :accessor realm-id)
    (settlement-type :initform 0 :initarg :settlement-type :accessor settlement-type)
@@ -203,10 +207,15 @@
     
     (when (features settlement)
       (format str "~A~%" (show-settlement-features settlement)))
+
+    (format str "~A" (show-settlement-events settlement))
     
     (format str "~%It is day ~A today.~%" (show-cur-time))
     (format str "~%")
     str))
+
+;; ==============================
+
 
 (defclass trader ()
   ((id :initform nil :initarg :id :accessor id)
@@ -222,6 +231,8 @@
   (setf (gethash (id trader) *traders*) trader)
   )
 
+;; ==============================
+
 (defclass item-type ()
   ((id :initform nil :accessor id)
    (name :initform "Item" :initarg :name :accessor name)
@@ -235,8 +246,12 @@
 (defun get-item-type-by-id (item-type-id)
   (gethash item-type-id *item-types*))
 
+;; ==============================
+
 (defclass world ()
   ((wtime :initform 0 :initarg :wtime :accessor wtime)))
+
+;; ==============================
 
 (defclass realm ()
   ((id :initform nil :accessor id)
@@ -299,6 +314,8 @@
   (setf (ruler-male realm) t)
   (setf (ruler-name realm) (format nil "~A'~A" (nth (random (length *ruler-saurian-first-names*)) *ruler-saurian-first-names*) (nth (random (length *ruler-saurian-last-names*)) *ruler-saurian-last-names*))))
 
+;; ==============================
+
 (defclass quest-type ()
   ((id :initform nil :accessor id)
    (intro-str :initarg :intro-str :accessor intro-str)
@@ -312,6 +329,8 @@
 (defun get-quest-type-by-id (quest-type-id)
   (gethash quest-type-id *quest-types*))
 
+;; ==============================
+
 (defclass feature-type ()
   ((id :initform nil :accessor id)
    (name :initarg :name :accessor name)
@@ -323,6 +342,59 @@
 
 (defun get-feature-type-by-id (feature-type-id)
   (gethash feature-type-id *feature-types*))
+
+;; ==============================
+
+(defclass event-type ()
+  ((id :initform nil :accessor id)
+   (descr :initform "" :initarg :descr :accessor descr)
+   (max-stage :initform 5 :initarg :max-stage :accessor max-stage)
+   (on-tick :initform nil :initarg :on-tick :accessor on-tick)
+   (on-show :initform nil :initarg :on-show :accessor on-show)))
+
+(defun set-event-type-by-id (event-type-id event-type)
+  (setf (id event-type) event-type-id)
+  (setf (gethash event-type-id *event-types*) event-type))
+
+(defun get-event-type-by-id (event-type-id)
+  (gethash event-type-id *event-types*))
+
+(defclass event ()
+  ((id :initform nil :accessor id)
+   (event-type-id :initarg :event-type-id :accessor event-type-id)
+   (stage :initform 0 :initarg :stage :accessor stage)
+   ))
+
+(defmethod initialize-instance :after ((event event) &key)
+  (setf (id event) (find-free-id *events*))
+  (setf (gethash (id event) *events*) event)
+  )
+
+(defmethod descr ((event event))
+  (descr (get-event-type-by-id (event-type-id event))))
+
+(defmethod on-show ((event event))
+  (on-show (get-event-type-by-id (event-type-id event))))
+
+(defmethod on-tick ((event event))
+  (on-tick (get-event-type-by-id (event-type-id event))))
+
+(defmethod max-stage ((event event))
+  (max-stage (get-event-type-by-id (event-type-id event))))
+
+(defun get-event-settlement (settlement event-type-id)
+  (gethash (gethash event-type-id (events settlement)) *events*))
+
+(defun add-event-settlement (settlement event)
+  ;;(format t "GET-EVENT-SETTLEMENT ~A~%" (get-event-settlement settlement (event-type-id event)))
+  (if (get-event-settlement settlement (event-type-id event))
+    nil
+    (setf (gethash (event-type-id event) (events settlement)) (id event))))
+
+(defun remove-event-settlement (settlement event-type-id)
+  (when (get-event-settlement settlement event-type-id)
+    (remhash (id (get-event-settlement settlement event-type-id)) *events*)
+    (remhash event-type-id (events settlement))))
 
 ;; ======================================
 
@@ -395,41 +467,27 @@
            (format str ",")))
     (setf str (format nil "This ~(~A~) has the following features:~A" (get-settlement-size-name settlement) str))))
 
+(defun show-settlement-events (settlement)
+  (let ((str (create-string)) (event) (start t))
+    
+    (loop 
+      for event-type-id being the hash-key in (events settlement) 
+      do
+         (when start
+           (setf start nil)
+           (format str "~%"))
+         (setf event (get-event-settlement settlement event-type-id))
+         ;;(format t "EVENT-ID ~A~%" (descr event))
+         
+         (if (on-show event)
+           (format str "~A" (funcall (on-show event) event settlement))
+           (format str "~A~%" (descr event)))
+         )
+    str))
+
 (defun get-sell-price (item-type-id settlement)
   (get-settlement-sell-price settlement item-type-id))
 
 (defun get-buy-price (item-type-id settlement)
   (get-settlement-buy-price settlement item-type-id))
 
-(set-item-type-by-id +item-type-food+ (make-instance 'item-type :name "Edible mushrooms" :descr "In the underground world of Arq, mushrooms are grown for food." :base-price 5))
-(set-item-type-by-id +item-type-ore+ (make-instance 'item-type :name "Ore" :descr "Ore is mined to be smelted into different metals." :base-price 7))
-(set-item-type-by-id +item-type-tools+ (make-instance 'item-type :name "Tools" :descr "Everybody needs tools for their trade." :base-price 15))
-(set-item-type-by-id +item-type-wood+ (make-instance 'item-type :name "Wood" :descr "The world of Arq sees no sun, but its mushrooms can grow as big as any tree." :base-price 8))
-(set-item-type-by-id +item-type-furniture+ (make-instance 'item-type :name "Furniture" :descr "Ever tried to sleep on the cave floor? Nasty experience!" :base-price 20))
-(set-item-type-by-id +item-type-weapons+ (make-instance 'item-type :name "Weapons & Armor" :descr "War. War never changes, even underground." :base-price 30))
-(set-item-type-by-id +item-type-crafts+ (make-instance 'item-type :name "Crafts" :descr "Mainly figurines, toys, instruments and mugs." :base-price 14))
-(set-item-type-by-id +item-type-gems+ (make-instance 'item-type :name "Gems" :descr "Sometimes miners find these while drilling through the rock." :base-price 50))
-(set-item-type-by-id +item-type-jewelry+ (make-instance 'item-type :name "Jewelry" :descr "Afordable obly by the richest." :base-price 100))
-
-
-(set-quest-type-by-id +quest-type-money-donation+ (make-instance 'quest-type :intro-str "Our realm requires a sizable donation of gold to further our wealth and prosperity. You are required to present us with 2000 gold." 
-                                                                             :quest-item-id +quest-item-money+
-                                                                             :quest-item-num 2000))
-
-(set-quest-type-by-id +quest-type-weapons-donation+ (make-instance 'quest-type :intro-str "Forgotten beasts threaten peace of our realm. To arm new recruits we need 50 sets of weapons & armor." 
-                                                                              :quest-item-id +item-type-weapons+
-                                                                              :quest-item-num 50))
-
-(set-quest-type-by-id +quest-type-gems-donation+ (make-instance 'quest-type :intro-str "Our crafters require gems to master their skills. 30 gems will do." 
-                                                                            :quest-item-id +item-type-gems+
-                                                                            :quest-item-num 30))
-
-(set-quest-type-by-id +quest-type-jewelry-donation+ (make-instance 'quest-type :intro-str "We need rings and necklaces to show everyone the superiority of our realm. 20 items of jewelry will be sufficient." 
-                                                                               :quest-item-id +item-type-jewelry+
-                                                                               :quest-item-num 20))
-
-(set-quest-type-by-id +quest-type-food-donation+ (make-instance 'quest-type :intro-str "Famine often plagues our realm. We need 500 barrels of mushrooms to feed the starving." 
-                                                                            :quest-item-id +item-type-food+
-                                                                            :quest-item-num 500))
-
-(set-feature-type-by-id +feature-type-palace+ (make-instance 'feature-type :name "Palace"))

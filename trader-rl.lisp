@@ -10,7 +10,7 @@
     (incf (action-done *player*))))
 
 (defun save-game ()
-  (let ((save-list (list *world* *settlements* *traders* *links* *realms*)))
+  (let ((save-list (list *world* *settlements* *traders* *links* *realms* *events*)))
     (cl-store:store save-list (merge-pathnames "save" *current-dir*))
     ))
 
@@ -22,6 +22,7 @@
     (setf *traders* (nth 2 load-list))
     (setf *links* (nth 3 load-list))
     (setf *realms* (nth 4 load-list))
+    (setf *events* (nth 5 load-list))
     (setf *player* (gethash 0 *traders*))))
 
 (defun init-game ()
@@ -29,6 +30,7 @@
   (setf *traders* (make-hash-table))
   (setf *links* (make-hash-table))
   (setf *realms* (make-hash-table))
+  (setf *events* (make-hash-table))
   (setf *world* (make-instance 'world))
   )
 

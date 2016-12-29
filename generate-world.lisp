@@ -122,6 +122,8 @@
          
          (initialize-produce-consume settlement)
          (initialize-demand-supply settlement)
+
+         ;;(add-event-settlement settlement (make-instance 'event :event-type-id +event-type-famine+))
          
          ;; create 3 random items in the settlement market
          (add-to-inv (random 9) (market settlement) (+ 5 (random 10)))

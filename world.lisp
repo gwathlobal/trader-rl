@@ -9,6 +9,7 @@
     do
        (adjust-settlement-items settlement)
        (adjust-settlement-prices settlement)
+       (adjust-settlement-events settlement)
     )
 
   (loop
@@ -22,7 +23,7 @@
   (let ((items-produce (items-produce settlement))
         (items-consume (items-consume settlement))
         )
-    (format t "~%ADJUST-SETTLEMENT-ITEMS: ~A~%" (name settlement))
+    ;;(format t "~%ADJUST-SETTLEMENT-ITEMS: ~A~%" (name settlement))
     ;; set up production and consumptions for the settlement
     
     ;; iterate through the production to add items to the marketplace
@@ -68,7 +69,7 @@
        (setf cur-demand (get-settlement-cur-demand settlement item-type-id))
        (setf cur-supply (get-settlement-cur-supply settlement item-type-id))
        
-       ;;(format t "~%ADJUST-SETTLEMENT-PRICES: ~A, DELTA-DEMAND ~A, DELTA-SUPPLY ~A~%" (name settlement) (- base-demand cur-demand) (- base-supply cur-supply))
+       (format t "~%ADJUST-SETTLEMENT-PRICES: ~A, ~A, DELTA-DEMAND ~A, DELTA-SUPPLY ~A~%" (name settlement) (name (get-item-type-by-id item-type-id)) (- base-demand cur-demand) (- base-supply cur-supply))
 
        (cond
          ((> (- base-demand cur-demand) 0)
@@ -98,3 +99,25 @@
     (decf (ruler-favor realm)))
   (setf (audience realm) nil)
   )
+
+(defun adjust-settlement-events (settlement)
+  ;; add a new event
+  (when (zerop (random 40))
+    (add-event-settlement settlement (make-instance 'event :event-type-id (random (hash-table-count *event-types*)))))
+
+  ;; process existing events
+  (loop 
+      for event-type-id being the hash-key in (events settlement)
+      with event = nil
+      do
+         
+         (setf event (get-event-settlement settlement event-type-id))
+                  
+         (if (on-tick event)
+           (funcall (on-tick event) event settlement)
+           (progn
+             (incf (stage event))
+             (when (> (stage event) (max-stage event))
+               (remove-event-settlement settlement (event-type-id event)))
+             ))
+         ))
