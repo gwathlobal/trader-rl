@@ -5,7 +5,10 @@
 
 (defun generate-world (settlements traders &optional (max-settlements 5))
   (let ((pc-trader nil) (edges nil)
-        (palace nil))
+        (realm-human)
+        (realm-tachidi)
+        (realm-saurian)
+        (realm-gremlin))
     ;; adding pc trader
     (setf pc-trader (make-instance 'trader :name "Player" :money 50000))
     (setf *player* pc-trader)
@@ -26,21 +29,56 @@
            (setf edges (append edges (list (list i (random i))))))
       )
     
+    (setf realm-human (make-instance 'realm-human :ruler-race +race-type-human+))
+    (setf realm-tachidi (make-instance 'realm-tachidi :ruler-race +race-type-tachidi+))
+    (setf realm-saurian (make-instance 'realm-saurian :ruler-race +race-type-saurian+))
+    (setf realm-gremlin (make-instance 'realm-gremlin :ruler-race +race-type-gremlin+))
+    
     ;; adding settlements to world
     (loop 
       for i from 0 below max-settlements
       with settlement = nil
-      with settlement-name-list = (copy-list *settlement-names*)
+      with cur-settlement-race = 0
+      with settlement-name-list-human = (copy-list *settlement-human-names*)
+      with settlement-name-list-tachidi = (copy-list *settlement-tachidi-names*)
+      with settlement-name-list-saurian = (copy-list *settlement-saurian-names*)
+      with settlement-name-list-gremlin = (copy-list *settlement-gremlin-names*)
       with settlement-name-n = nil
       with settlement-name = nil
       with x = 0
       with y = 0
       with min-distance = 4
+      with realm-id = nil
       do 
-         ;; make sure all randomly picked names are unique (by removing the picked name from the pool of names) 
-         (setf settlement-name-n (random (length settlement-name-list)))
-         (setf settlement-name (nth settlement-name-n settlement-name-list))
-         (setf settlement-name-list (remove (nth settlement-name-n settlement-name-list) settlement-name-list))
+         (setf cur-settlement-race (random 4))
+          ;; make sure all randomly picked names are unique (by removing the picked name from the pool of names) 
+         (cond
+           ((= cur-settlement-race +race-type-human+) 
+            (setf settlement-name-n (random (length settlement-name-list-human)))
+            (setf settlement-name (nth settlement-name-n settlement-name-list-human))
+            (setf settlement-name-list-human (remove (nth settlement-name-n settlement-name-list-human) settlement-name-list-human))
+            (setf realm-id (id realm-human))
+            )
+           ((= cur-settlement-race +race-type-tachidi+)
+            (setf settlement-name-n (random (length settlement-name-list-tachidi)))
+            (setf settlement-name (nth settlement-name-n settlement-name-list-tachidi))
+            (setf settlement-name-list-tachidi (remove (nth settlement-name-n settlement-name-list-tachidi) settlement-name-list-tachidi))
+            (setf realm-id (id realm-tachidi))
+            )
+           ((= cur-settlement-race +race-type-gremlin+)
+            (setf settlement-name-n (random (length settlement-name-list-gremlin)))
+            (setf settlement-name (nth settlement-name-n settlement-name-list-gremlin))
+            (setf settlement-name-list-gremlin (remove (nth settlement-name-n settlement-name-list-gremlin) settlement-name-list-gremlin))
+            (setf realm-id (id realm-gremlin))
+            )
+           ((= cur-settlement-race +race-type-saurian+)
+            (setf settlement-name-n (random (length settlement-name-list-saurian)))
+            (setf settlement-name (nth settlement-name-n settlement-name-list-saurian))
+            (setf settlement-name-list-saurian (remove (nth settlement-name-n settlement-name-list-saurian) settlement-name-list-saurian))
+            (setf realm-id (id realm-saurian))
+            ))
+        
+         ;;(format t "~%SETTLEMENT-NAME ~A, CUR-SETTLEMENT-RACE ~A, REALM-ID ~A~%")
          
          ;; find such location that the distance from all other already created locations is more than min-distance
          (loop
@@ -75,16 +113,17 @@
             (setf (settlement-type settlement) +settlement-type-industry+))
            ((= (settlement-size settlement) +settlement-size-city+)
             (setf (settlement-type settlement) +settlement-type-sprawling+)
-            (setf palace (make-instance 'palace))
-            (set-settlement-palace settlement palace)))
+            (set-settlement-palace settlement)))
 
+         ;; set realm
+         (setf (realm-id settlement) realm-id)
+         (setf (race-type settlement) cur-settlement-race)
+         
+         
          (initialize-produce-consume settlement)
          (initialize-demand-supply settlement)
          
-         ;; create a shop in the settlement
-         ;;(setf (shops settlement) (add-shop-to-list (shops settlement) (make-instance 'shop)))
-
-         ;; create 3 random items in the shop's inventory
+         ;; create 3 random items in the settlement market
          (add-to-inv (random 9) (market settlement) (+ 5 (random 10)))
          (add-to-inv (random 9) (market settlement) (+ 5 (random 10)))
          (add-to-inv (random 9) (market settlement) (+ 5 (random 10)))

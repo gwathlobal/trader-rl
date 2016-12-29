@@ -9,9 +9,13 @@
     do
        (adjust-settlement-items settlement)
        (adjust-settlement-prices settlement)
-       (adjust-settlement-palace settlement)
     )
 
+  (loop
+    for realm being the hash-value in *realms*
+    do
+       (adjust-realm realm)
+    )
   (incf (wtime *world*)))
 
 (defun adjust-settlement-items (settlement)
@@ -84,15 +88,13 @@
             (set-settlement-cur-supply settlement item-type-id (1- cur-supply)))))
        ))
 
-(defun adjust-settlement-palace (settlement)
-  (when (palace-id settlement)
-    (let ((palace (get-settlement-palace settlement)))
-      (incf (quest-timer palace))
-      (when (> (quest-timer palace) 30)
-        (setf (cur-quest palace) (random (hash-table-count *quest-types*)))
-        (setf (cur-quest palace) +quest-type-money-donation+)
-        (setf (quest-timer palace) 0))
-      (when (and (zerop (random 100)) (> (ruler-favor palace) 0))
-        (decf (ruler-favor palace)))
-      (setf (audience palace) nil)
-      )))
+(defun adjust-realm (realm)
+  (incf (quest-timer realm))
+  (when (> (quest-timer realm) 30)
+    (setf (cur-quest realm) (random (hash-table-count *quest-types*)))
+    (setf (cur-quest realm) +quest-type-money-donation+)
+    (setf (quest-timer realm) 0))
+  (when (and (zerop (random 100)) (> (ruler-favor realm) 0))
+    (decf (ruler-favor realm)))
+  (setf (audience realm) nil)
+  )

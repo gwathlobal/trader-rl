@@ -1,7 +1,10 @@
 (in-package :trader-rl)
 
 (defclass intro-window (window)
-  ())
+  ((win-type :initarg :win-type :accessor win-type :type keyword) ; :new - new game intro
+                                                                  ; :error - load error intro
+                                                                  ; :load - load intro   
+   ))
 
 
 
@@ -16,8 +19,17 @@
   
   (let ((str (create-string)))
     
-    ;; output intro info
-    (format str "TRADER RL~%~%Welcome to Trader RL. You are a trader in the harsh dark world of Arq. The surface has long become inhospitable and all life has moved underground. People live in lonely settlements linked by long twisted tunnels.~%Traders like you connect these dots of civilization, travelling and trading. Your dream is to become memeber of the ruler's court and ascend as the Master Treasurer of the realm. May the gods be with you!~%~%[Press any key to continue]~%")
+    (cond
+      ((eq (win-type win) :new)
+       ;; output new game intro info
+       (format str "TRADER RL~%~%Welcome to Trader RL. You are a trader in the harsh dark world of Arq. The surface has long become inhospitable and all life has moved underground. People live in lonely settlements linked by long twisted tunnels.~%Traders like you connect these dots of civilization, travelling and trading. Your dream is to become memeber of the ruler's court and ascend as the Master Treasurer of the realm. May the gods be with you!~%~%[Press any key to continue]~%"))
+      ((eq (win-type win) :error)
+       ;; output error intro info
+       (format str "TRADER RL~%~%Error loading the save game.~%New game is created.~%~%[Press any key to continue]~%"))
+      ((eq (win-type win) :load)
+       ;; output error intro info
+       (format str "TRADER RL~%~%Loading the save game.~%~%[Press any key to continue]~%"))
+      )
     
     (sdl:with-default-font ((sdl:initialise-default-font sdl:*font-6x13*))
       (write-text str (sdl:rectangle :x 1 :y 1 :w 800 :h 600)))

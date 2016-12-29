@@ -18,7 +18,7 @@
            (win-actions win))
 
   (let ((player-settlement (get-settlement-by-id (current-settlement-id *player*))))
-    (when (= (settlement-size player-settlement) +settlement-size-city+)
+    (when (get-settlement-palace player-settlement)
       (pushnew (cons (format nil "Visit the palace") 
                      #'(lambda (n) (declare (ignore n)) (setf *current-window* (make-instance 'palace-window)))) 
                (win-actions win)))

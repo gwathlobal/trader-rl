@@ -15,6 +15,8 @@
    (x :initform 0 :initarg :x :accessor x)
    (y :initform 0 :initarg :y :accessor y)
    (name :initform "Unnamed settlement" :initarg :name :accessor name)
+   (race-type :initform (random (length *race-names*)) :initarg :race-type :accessor race-type)
+   
    (links :initform nil :initarg :links :accessor links)
    ;; type - (link-id link-id ...)
    ;;(shops :initform nil :initarg :shops :accessor shops)
@@ -22,7 +24,9 @@
 
    (market :initform (make-hash-table) :accessor market)
 
-   (palace-id :initform nil :initarg :palace-id :accessor palace-id)
+   (features :initform () :initarg :features :accessor features) ;; list of +feature-type-...+ constants
+   
+   (realm-id :initform nil :initarg :realm-id :accessor realm-id)
    (settlement-type :initform 0 :initarg :settlement-type :accessor settlement-type)
    (settlement-size :initform 0 :initarg :settlement-size :accessor settlement-size)
    
@@ -173,18 +177,18 @@
 (defun get-settlement-link (settlement n)
   (gethash (nth n (links settlement)) *links*))
 
-;;(defun get-settlement-shop (settlement n)
-;;  (gethash (nth n (shops settlement)) *shops*))
-
-;;(defun get-first-settlement-shop (settlement)
-;;  (when (shops settlement)
-;;    (gethash (first (shops settlement)) *shops*)))
-
 (defun get-settlement-palace (settlement)
-  (gethash (palace-id settlement) *palaces*))
+  (find +feature-type-palace+ (features settlement)))
 
-(defun set-settlement-palace (settlement palace)
-  (setf (palace-id settlement) (id palace)))
+(defun set-settlement-palace (settlement)
+  (unless (get-settlement-palace settlement)
+    (pushnew +feature-type-palace+ (features settlement))))
+
+(defun get-settlement-realm (settlement)
+  (gethash (realm-id settlement) *realms*))
+
+(defun set-settlement-realm (settlement realm)
+  (setf (realm-id settlement) (id realm)))
 
 (defun get-settlement-size-name (settlement)
   (nth (settlement-size settlement) *settlement-size-names*))
@@ -195,9 +199,12 @@
 (defun get-settlement-descr-for-player (settlement)
   (let ((str (create-string)))
     (format str "You are in the ~A ~A of ~A~%" (get-settlement-type-adj settlement) (get-settlement-size-name settlement) (name settlement))
-    ;;(when (get-first-settlement-shop settlement)
-    ;; (format str "There is a ~A in the town.~%" (name (get-first-settlement-shop settlement))))
-    (format str "It is day ~A today.~%" (show-cur-time))
+    (format str "It is a ~(~A~) ~A.~%" (nth (race-type settlement) *race-names*) (get-settlement-size-name settlement))
+    
+    (when (features settlement)
+      (format str "~A~%" (show-settlement-features settlement)))
+    
+    (format str "~%It is day ~A today.~%" (show-cur-time))
     (format str "~%")
     str))
 
@@ -215,30 +222,6 @@
   (setf (gethash (id trader) *traders*) trader)
   )
 
-
-;;(defclass item ()
-;;  ((id :initform nil :initarg :id :accessor id)
-;;   (item-type :initarg :item-type :accessor item-type)
-;;   (qty :initform 0 :initarg :qty :accessor qty)
-;;   ))
-
-;;(defmethod initialize-instance :after ((item item) &key)
-;;  (setf (id item) (find-free-id *items*))
-;;  (setf (gethash (id item) *items*) item)
-;;  )
-
-;;(defmethod name ((item item))
-;;  (name (get-item-type-by-id (item-type item))))
-
-;;(defmethod descr ((item item))
-;;  (descr (get-item-type-by-id (item-type item))))
-
-;;(defun get-item-by-id (item-id)
-;;  (gethash item-id *items*))
-
-;;(defun rem-item-from-world (item)
-;;  (remhash (id item) *items*))
-
 (defclass item-type ()
   ((id :initform nil :accessor id)
    (name :initform "Item" :initarg :name :accessor name)
@@ -255,8 +238,9 @@
 (defclass world ()
   ((wtime :initform 0 :initarg :wtime :accessor wtime)))
 
-(defclass palace ()
+(defclass realm ()
   ((id :initform nil :accessor id)
+   (ruler-race :initarg :ruler-race :accessor ruler-race)
    (ruler-name :initarg :ruler-name :accessor ruler-name)
    (ruler-male :initarg :ruler-male :accessor ruler-male)
    (ruler-title :initarg :ruler-title :accessor ruler-title)
@@ -266,20 +250,54 @@
    (quest-timer :initform 0 :accessor quest-timer)
    ))
 
-(defmethod initialize-instance :after ((palace palace) &key)
-  (setf (id palace) (find-free-id *palaces*))
-  (setf (gethash (id palace) *palaces*) palace)
+(defmethod initialize-instance :after ((realm realm) &key)
+  (setf (id realm) (find-free-id *realms*))
+  (setf (gethash (id realm) *realms*) realm)
 
+  (setf (ruler-title realm) (nth (random (length *ruler-title-names*)) *ruler-title-names*))
+  )
+
+(defclass realm-human (realm)
+  ())
+
+(defmethod initialize-instance :after ((realm realm-human) &key)
   (if (zerop (random 2))
     (progn
-      (setf (ruler-male palace) t)
-      (setf (ruler-name palace) (nth (random (length *ruler-male-names*)) *ruler-male-names*)))
+      (setf (ruler-male realm) t)
+      (setf (ruler-name realm) (nth (random (length *ruler-human-male-names*)) *ruler-human-male-names*)))
     (progn
-      (setf (ruler-male palace) nil)
-      (setf (ruler-name palace) (nth (random (length *ruler-female-names*)) *ruler-female-names*))))
-  
-  (setf (ruler-title palace) (nth (random (length *ruler-title-names*)) *ruler-title-names*))
-  )
+      (setf (ruler-male realm) nil)
+      (setf (ruler-name realm) (nth (random (length *ruler-human-female-names*)) *ruler-human-female-names*)))))
+
+(defclass realm-tachidi (realm)
+  ())
+
+(defmethod initialize-instance :after ((realm realm-tachidi) &key)
+  (setf (ruler-male realm) nil)
+  (setf (ruler-name realm) (format nil "~A'~A'~A" 
+                                   (nth (random (length *ruler-tachidi-first-names*)) *ruler-tachidi-first-names*) 
+                                   (nth (random (length *ruler-tachidi-second-names*)) *ruler-tachidi-second-names*)
+                                   (nth (random (length *ruler-tachidi-third-names*)) *ruler-tachidi-third-names*)
+                                   )))
+
+(defclass realm-gremlin (realm)
+  ())
+
+(defmethod initialize-instance :after ((realm realm-gremlin) &key)
+  (if (zerop (random 2))
+    (progn
+      (setf (ruler-male realm) t)
+      (setf (ruler-name realm) (nth (random (length *ruler-gremlin-male-names*)) *ruler-gremlin-male-names*)))
+    (progn
+      (setf (ruler-male realm) nil)
+      (setf (ruler-name realm) (nth (random (length *ruler-gremlin-female-names*)) *ruler-gremlin-female-names*)))))
+
+(defclass realm-saurian (realm)
+  ())
+
+(defmethod initialize-instance :after ((realm realm-saurian) &key)
+  (setf (ruler-male realm) t)
+  (setf (ruler-name realm) (format nil "~A'~A" (nth (random (length *ruler-saurian-first-names*)) *ruler-saurian-first-names*) (nth (random (length *ruler-saurian-last-names*)) *ruler-saurian-last-names*))))
 
 (defclass quest-type ()
   ((id :initform nil :accessor id)
@@ -293,6 +311,20 @@
 
 (defun get-quest-type-by-id (quest-type-id)
   (gethash quest-type-id *quest-types*))
+
+(defclass feature-type ()
+  ((id :initform nil :accessor id)
+   (name :initarg :name :accessor name)
+   ))
+
+(defun set-feature-type-by-id (feature-type-id feature-type)
+  (setf (id feature-type) feature-type-id)
+  (setf (gethash feature-type-id *feature-types*) feature-type))
+
+(defun get-feature-type-by-id (feature-type-id)
+  (gethash feature-type-id *feature-types*))
+
+;; ======================================
 
 (defun find-free-id (hash-table)
   (do ((id 0 (+ id 1)))
@@ -351,6 +383,18 @@
     str
     ))
 
+(defun show-settlement-features (settlement)
+  (let ((str (create-string)) (feature))
+    (loop 
+      for i from 0 below (length (features settlement)) 
+      do
+         (setf feature (get-feature-type-by-id (nth i (features settlement))))
+         (format t "FEATURE-ID ~A~%" (nth i (features settlement)))
+         (format str " ~A" (name feature))
+         (when (/= i (1- (length (features settlement))))
+           (format str ",")))
+    (setf str (format nil "This ~(~A~) has the following features:~A" (get-settlement-size-name settlement) str))))
+
 (defun get-sell-price (item-type-id settlement)
   (get-settlement-sell-price settlement item-type-id))
 
@@ -366,6 +410,7 @@
 (set-item-type-by-id +item-type-crafts+ (make-instance 'item-type :name "Crafts" :descr "Mainly figurines, toys, instruments and mugs." :base-price 14))
 (set-item-type-by-id +item-type-gems+ (make-instance 'item-type :name "Gems" :descr "Sometimes miners find these while drilling through the rock." :base-price 50))
 (set-item-type-by-id +item-type-jewelry+ (make-instance 'item-type :name "Jewelry" :descr "Afordable obly by the richest." :base-price 100))
+
 
 (set-quest-type-by-id +quest-type-money-donation+ (make-instance 'quest-type :intro-str "Our realm requires a sizable donation of gold to further our wealth and prosperity. You are required to present us with 2000 gold." 
                                                                              :quest-item-id +quest-item-money+
@@ -386,3 +431,5 @@
 (set-quest-type-by-id +quest-type-food-donation+ (make-instance 'quest-type :intro-str "Famine often plagues our realm. We need 500 barrels of mushrooms to feed the starving." 
                                                                             :quest-item-id +item-type-food+
                                                                             :quest-item-num 500))
+
+(set-feature-type-by-id +feature-type-palace+ (make-instance 'feature-type :name "Palace"))

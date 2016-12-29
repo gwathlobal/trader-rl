@@ -10,7 +10,7 @@
     (incf (action-done *player*))))
 
 (defun save-game ()
-  (let ((save-list (list *world* *settlements* *traders* *links* *palaces*)))
+  (let ((save-list (list *world* *settlements* *traders* *links* *realms*)))
     (cl-store:store save-list (merge-pathnames "save" *current-dir*))
     ))
 
@@ -21,13 +21,14 @@
     (setf *settlements* (nth 1 load-list))
     (setf *traders* (nth 2 load-list))
     (setf *links* (nth 3 load-list))
-    (setf *palaces* (nth 4 load-list))
+    (setf *realms* (nth 4 load-list))
     (setf *player* (gethash 0 *traders*))))
 
 (defun init-game ()
   (setf *settlements* (make-hash-table))
   (setf *traders* (make-hash-table))
   (setf *links* (make-hash-table))
+  (setf *realms* (make-hash-table))
   (setf *world* (make-instance 'world))
   )
 
@@ -54,13 +55,20 @@
        (init-game)
 
        ;; load game if save file available
-       (if (probe-file (merge-pathnames "save" *current-dir*))
-         (load-game)
-         (start-new-game))
+       (let ((load-type ':load))
+         (if (probe-file (merge-pathnames "save" *current-dir*))
+           (handler-case (load-game)
+             (t ()
+               (format t "~%LOAD GAME FAILED~%NEW GAME CREATED INSTEAD~%~%")
+               (start-new-game)
+               (setf load-type ':error)))
+           (progn
+             (start-new-game)
+             (setf load-type ':new)))
        
-       (setf *current-window* (make-instance 'intro-window))
-       (make-output *current-window*)
-       (run-window *current-window*)
+         (setf *current-window* (make-instance 'intro-window :win-type load-type))
+         (make-output *current-window*)
+         (run-window *current-window*))
        ;; the game loop
        
        (game-loop)
