@@ -16,6 +16,7 @@
   :components
     (
      (:file "globals")
+     (:file "time")
      (:file "data-structures")
      (:file "inventory")
      (:file "world")

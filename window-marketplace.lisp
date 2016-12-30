@@ -65,7 +65,7 @@
     (setf (cur-sel win) (adjust-selection-list (cur-sel win) (length (win-actions win))))
     
     ;; output city info
-    (format str "You are in the marketplace of ~A now.~%It is day ~A today. You have ~A gold.~%~%" (name player-settlement) (show-cur-time) (money *player*))
+    (format str "You are in the marketplace of ~A now.~%It is day ~A today. You have ~A gold.~%~%" (name player-settlement) (show-date-time (wtime *world*)) (money *player*))
 
     (if (= (cur-mode win) +win-mode-buy+)
       (progn

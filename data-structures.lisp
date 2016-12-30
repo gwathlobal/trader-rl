@@ -155,7 +155,7 @@
 
     (format str "~A" (show-settlement-events settlement))
     
-    (format str "~%It is day ~A today.~%" (show-cur-time))
+    (format str "~%It is day ~A today.~%" (show-date-time (wtime *world*)))
     (format str "~%")
     str))
 

@@ -1,8 +1,5 @@
 (in-package :trader-rl)
 
-(defun show-cur-time ()
-  (format nil "~A" (wtime *world*)))
-
 (defun make-world-turn ()
   (loop
     for settlement being the hash-value in *settlements*
