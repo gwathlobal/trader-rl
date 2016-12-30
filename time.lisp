@@ -6,4 +6,4 @@
 (defun show-date-time (wtime)
   (multiple-value-bind (year r) (truncate wtime 120)
     (multiple-value-bind (month day) (truncate r 30)
-      (format nil "~A of ~A, year ~A" day (nth month *month-names*) (1+ year)))))
+      (format nil "~A of ~A, year ~A" (1+ day) (nth month *month-names*) (1+ year)))))
