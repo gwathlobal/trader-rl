@@ -72,29 +72,40 @@
   ;; add a new random event
   ;; in case of 1 in 40 chance 
   (when (zerop (random 40))
-    ;; select a random event
-    (let ((event-type (get-event-type-by-id (random (length *event-random-types*))))
-          (passed nil))
-      ;; if the event has no on-rand function - it always applies
-      ;; if the event has the on-rand function, check if the conditions are met
-      (unless (on-rand event-type)
-        (setf passed t))
-      (when (and (on-rand event-type)
-                 (funcall (on-rand event-type) event-type settlement))
-        (setf passed t))
+    (let ((event-type nil)
+          (passed nil)
+          (applicable-events ()))
+
+      ;; create a list of applicable random events
+      (dolist (event-type-id *event-random-types*)
+        (setf event-type (get-event-type-by-id event-type-id))
+        
+        ;; if the event has no on-rand function - it always applies
+        ;; if the event has the on-rand function, check if the conditions are met
+        (setf passed nil)
+        (unless (on-rand event-type)
+          (setf passed t))
+        (when (and (on-rand event-type)
+                   (funcall (on-rand event-type) event-type settlement))
+          (setf passed t))
+        
+        (when passed
+          (pushnew event-type-id applicable-events)))
       
-      (format t "SETTLEMENT ~A, PASSED ~A, GET-EVENT ~A~%" (name settlement) passed (get-event-settlement settlement (id event-type)))
+      ;; select a random event
+      (setf event-type (get-event-type-by-id (nth (random (length applicable-events)) applicable-events)))
       
-      ;; if the conditions are met & there is no similair event, add the event
-      (when (and passed
-                 (not (get-event-settlement settlement (id event-type))))
-        (add-event-settlement settlement (make-instance 'event :event-type-id (id event-type))))))
+      (format t "SETTLEMENT ~A, EVENT-RANDOM-TYPES ~A, EVENT-NAME ~A, GET-EVENT ~A~%" (name settlement) applicable-events (descr event-type) (get-event-settlement settlement (id event-type)))
+
+      ;; if there is no similair event, add the event
+      (unless (get-event-settlement settlement (id event-type)))
+        (add-event-settlement settlement (make-instance 'event :event-type-id (id event-type)))))
 
   ;; check all rotational events to see if they are applicable
   (loop
     for event-type being the hash-value in *event-rotate-types*
     do
-       (format t "EVENT ROTATE, SETTLEMENT ~A, PASSED ~A, GET-EVENT ~A~%" (name settlement) (funcall (on-rotate event-type) event-type settlement) (get-event-settlement settlement (id event-type)))
+       ;;(format t "EVENT ROTATE, SETTLEMENT ~A, PASSED ~A, GET-EVENT ~A~%" (name settlement) (funcall (on-rotate event-type) event-type settlement) (get-event-settlement settlement (id event-type)))
 
        (when (and (funcall (on-rotate event-type) event-type settlement)
                   (not (get-event-settlement settlement (id event-type))))

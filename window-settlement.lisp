@@ -63,7 +63,7 @@
 
     ;; output help prompt
     (sdl:with-default-font ((sdl:initialise-default-font sdl:*font-6x13*))
-      (write-text (format nil "[Enter] Perform action [J] View journal") (sdl:rectangle :x 0 :y (+ 0 (* cur-line 13) (* 10 13)) :w 800 :h 20)))
+      (write-text (format nil "[Enter] Perform action  [J] View journal") (sdl:rectangle :x 0 :y (+ 0 (* cur-line 13) (* 10 13)) :w 800 :h 20)))
     
     )
   (sdl:update-display))

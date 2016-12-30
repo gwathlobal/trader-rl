@@ -99,6 +99,8 @@
       (sdl:draw-string-solid-* "*" x (+ y (* (+ (sdl:char-height font) *sel-y-offset*) (truncate (* (/ cur-str (length str-list)) str-per-page)))) :font font :color sdl:*white*))))
 
 (defun draw-multiline-selection-list (item-list cur-item x y w h &optional (color-list ()))
+  (unless item-list 
+    (return-from  draw-multiline-selection-list nil))
   (sdl:with-rectangle (rect (sdl:rectangle :x x :y y :w (- w 12) :h h))  
     ;;(format t "~%")
     (let ((screen-list ()) (start-item) (is-more-than-one-screen nil))

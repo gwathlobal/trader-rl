@@ -15,7 +15,8 @@
                                                                                         (remove-from-inv +item-type-jewelry+ (market settlement) (+ 3 (random 3)))
                                                                                         (remove-from-inv +item-type-weapons+ (market settlement) (+ 2 (random 2)))
                                                                                         ;; palace terraces may produce food
-                                                                                        (add-to-inv +item-type-food+ (market settlement) (1+ (random 7)))
+                                                                                        (produce-settlement-item +item-type-food+ settlement (1+ (random 7)))
+                                                                                        
                                                                                         )
                                                                            :on-add #'(lambda (feature settlement)
                                                                                        (declare (ignore feature))
@@ -27,8 +28,8 @@
                                                            :on-tick #'(lambda (feature settlement)
                                                                         (declare (ignore feature))
                                                                         ;; farm produces food & wood
-                                                                        (add-to-inv +item-type-food+ (market settlement) (+ 9 (random 6) (random 6) (random 6)))
-                                                                        (add-to-inv +item-type-wood+ (market settlement) (+ 3 (random 6)))
+                                                                        (produce-settlement-item +item-type-food+ settlement (+ 9 (random 6) (random 6) (random 6)))
+                                                                        (produce-settlement-item +item-type-wood+ settlement (+ 3 (random 6)))
                                                                         ;; farm consumes tools
                                                                         (remove-from-inv +item-type-tools+ (market settlement) (random 6))
                                                                         )
@@ -43,8 +44,8 @@
                                                                 :on-tick #'(lambda (feature settlement)
                                                                              (declare (ignore feature))
                                                                              ;; craftsman shop produces furniture & crafts
-                                                                             (add-to-inv +item-type-furniture+ (market settlement) (+ 6 (random 6)))
-                                                                             (add-to-inv +item-type-crafts+ (market settlement) (+ 6 (random 6)))
+                                                                             (produce-settlement-item +item-type-furniture+ settlement (+ 6 (random 6)))
+                                                                             (produce-settlement-item +item-type-crafts+ settlement (+ 6 (random 6)))
                                                                              ;; craftsman shop consumes wood
                                                                              (remove-from-inv +item-type-wood+ (market settlement) (+ 6 (random 6)))
                                                                              )
@@ -59,7 +60,7 @@
                                                                 :on-tick #'(lambda (feature settlement)
                                                                              (declare (ignore feature))
                                                                              ;; jeweller produces jewelry
-                                                                             (add-to-inv +item-type-jewelry+ (market settlement) (+ 1 (random 3)))
+                                                                             (produce-settlement-item +item-type-jewelry+ settlement (+ 1 (random 3)))
                                                                              ;; jeweller consumes gems
                                                                              (remove-from-inv +item-type-gems+ (market settlement) (+ 3 (random 6)))
                                                                              )
@@ -73,8 +74,8 @@
                                                                  :on-tick #'(lambda (feature settlement)
                                                                              (declare (ignore feature))
                                                                              ;; blacksmith produces tools & weapons
-                                                                             (add-to-inv +item-type-tools+ (market settlement) (+ 6 (random 6)))
-                                                                             (add-to-inv +item-type-weapons+ (market settlement) (+ 3 (random 6)))
+                                                                             (produce-settlement-item +item-type-tools+ settlement (+ 6 (random 6)))
+                                                                             (produce-settlement-item +item-type-weapons+ settlement (+ 3 (random 6)))
                                                                              ;; blacksmith consumes ore
                                                                              (remove-from-inv +item-type-ore+ (market settlement) (+ 9 (random 6) (random 6)))
                                                                              )
@@ -89,8 +90,8 @@
                                                            :on-tick #'(lambda (feature settlement)
                                                                         (declare (ignore feature))
                                                                         ;; mine produces ore & gems
-                                                                        (add-to-inv +item-type-ore+ (market settlement) (+ 9 (random 6) (random 6) (random 6)))
-                                                                        (add-to-inv +item-type-gems+ (market settlement) (+ 3 (random 6)))
+                                                                        (produce-settlement-item +item-type-ore+ settlement (+ 9 (random 6) (random 6) (random 6)))
+                                                                        (produce-settlement-item +item-type-gems+ settlement (+ 3 (random 6)))
                                                                         ;; mine consumes tools
                                                                         (remove-from-inv +item-type-tools+ (market settlement) (+ 3 (random 6)))
                                                                         )
@@ -108,19 +109,19 @@
                                                                                             ;; population consumes crafts and furniture
                                                                                             (cond
                                                                                               ((= (settlement-size settlement) +settlement-size-village+)
-                                                                                               (add-to-inv +item-type-food+ (market settlement) (+ 7 (random 7) (random 7)))
+                                                                                               (produce-settlement-item +item-type-food+ settlement (+ 7 (random 7) (random 7)))
                                                                                                (remove-from-inv +item-type-food+ (market settlement) (+ 4 (random 7) (random 7)))
                                                                                                (remove-from-inv +item-type-crafts+ (market settlement) (random 4))
                                                                                                (remove-from-inv +item-type-furniture+ (market settlement) (random 3))
                                                                                                )
                                                                                               ((= (settlement-size settlement) +settlement-size-town+)
-                                                                                               (add-to-inv +item-type-food+ (market settlement) (+ 4 (random 7) (random 7)))
+                                                                                               (produce-settlement-item +item-type-food+ settlement (+ 4 (random 7) (random 7)))
                                                                                                (remove-from-inv +item-type-food+ (market settlement) (+ 3 (random 7) (random 7)))
                                                                                                (remove-from-inv +item-type-crafts+ (market settlement) (+ 6 (random 6)))
                                                                                                (remove-from-inv +item-type-furniture+ (market settlement) (+ 2 (random 6)))
                                                                                                )
                                                                                               ((= (settlement-type settlement) +settlement-type-sprawling+)
-                                                                                               (add-to-inv +item-type-food+ (market settlement) (+ 2 (random 7) (random 7) (random 7)))
+                                                                                               (produce-settlement-item +item-type-food+ settlement (+ 2 (random 7) (random 7) (random 7)))
                                                                                                (remove-from-inv +item-type-food+ (market settlement) (+ 1 (random 7) (random 7) (random 7)))
                                                                                                (remove-from-inv +item-type-crafts+ (market settlement) (+ 6 (random 6)))
                                                                                                (remove-from-inv +item-type-furniture+ (market settlement) (+ 6 (random 6)))
@@ -151,3 +152,14 @@
                                                                                               )
                                                                                            )))
 
+(set-feature-type-by-id +feature-type-small-warehouse+ (make-instance 'feature-type :name "Small warehouse" :hidden nil
+                                                                                    :on-tick nil
+                                                                                    :on-add nil))
+
+(set-feature-type-by-id +feature-type-med-warehouse+ (make-instance 'feature-type :name "Medium warehouse" :hidden nil
+                                                                                  :on-tick nil
+                                                                                  :on-add nil))
+
+(set-feature-type-by-id +feature-type-large-warehouse+ (make-instance 'feature-type :name "Large warehouse" :hidden nil
+                                                                                    :on-tick nil
+                                                                                    :on-add nil))

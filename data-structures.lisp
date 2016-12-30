@@ -48,17 +48,21 @@
   (cond
     ((= (settlement-type settlement) +settlement-type-agriculture+)
      (set-settlement-feature settlement +feature-type-farm+)
+     (set-settlement-feature settlement +feature-type-small-warehouse+)
      )
     ((= (settlement-type settlement) +settlement-type-mining+)
      (set-settlement-feature settlement +feature-type-mine+)
+     (set-settlement-feature settlement +feature-type-small-warehouse+)
      )
     ((= (settlement-type settlement) +settlement-type-industry+)
      (set-settlement-feature settlement +feature-type-craftshop+)
      (set-settlement-feature settlement +feature-type-jewelshop+)
      (set-settlement-feature settlement +feature-type-weaponshop+)
+     (set-settlement-feature settlement +feature-type-med-warehouse+)
      )
     ((= (settlement-type settlement) +settlement-type-sprawling+)
      (set-settlement-feature settlement +feature-type-palace+)
+     (set-settlement-feature settlement +feature-type-large-warehouse+)
      )
     ))
 
@@ -135,6 +139,31 @@
                (get-feature-type-by-id feature-type-id)
                settlement))))
 
+(defun remove-settlement-feature (settlement feature-type-id)
+  (when (get-settlement-feature settlement feature-type-id)
+    (setf (features settlement) (remove feature-type-id (features settlement)))
+    
+    ;; invoke on-remove function if available
+    (when (on-remove (get-feature-type-by-id feature-type-id))
+      (funcall (on-remove (get-feature-type-by-id feature-type-id))
+               (get-feature-type-by-id feature-type-id)
+               settlement))))
+
+(defun get-settlement-max-capacity (settlement)
+  (let ((max-capacity))
+    (cond
+      ((get-settlement-feature settlement +feature-type-small-warehouse+) (setf max-capacity 700))
+      ((get-settlement-feature settlement +feature-type-med-warehouse+) (setf max-capacity 1000))
+      ((get-settlement-feature settlement +feature-type-large-warehouse+) (setf max-capacity 1300))
+      (t (setf max-capacity 500)))
+    max-capacity))
+
+(defun produce-settlement-item (item-type-id settlement qty)
+  (let ((max-capacity))
+    (setf max-capacity (get-settlement-max-capacity settlement))
+    (when (< (get-item-inv item-type-id (market settlement)) max-capacity)
+      (add-to-inv item-type-id (market settlement) qty))))
+
 (defun get-settlement-realm (settlement)
   (gethash (realm-id settlement) *realms*))
 
@@ -149,8 +178,8 @@
 
 (defun get-settlement-descr-for-player (settlement)
   (let ((str (create-string)))
-    (format str "You are in the ~A ~A of ~A~%" (get-settlement-type-adj settlement) (get-settlement-size-name settlement) (name settlement))
-    (format str "It is a ~(~A~) ~A.~%" (nth (race-type settlement) *race-names*) (get-settlement-size-name settlement))
+    (format str "You are in the ~A ~(~A~) of ~A~%." (get-settlement-type-adj settlement) (get-settlement-size-name settlement) (name settlement))
+    (format str "It is a ~(~A~) ~(~A~).~%" (nth (race-type settlement) *race-names*) (get-settlement-size-name settlement))
     
     (when (features settlement)
       (format str "~A~%" (show-settlement-features settlement)))
@@ -285,6 +314,7 @@
    (hidden :initform nil :initarg :hidden :accessor hidden)
    (on-tick :initform nil :initarg :on-tick :accessor on-tick)
    (on-add :initform nil :initarg :on-add :accessor on-add)
+   (on-remove :initform nil :initarg :on-remove :accessor on-remove)
    ))
 
 (defun set-feature-type-by-id (feature-type-id feature-type)
@@ -440,7 +470,7 @@
              (format str ","))
            (format str " ~A" (name feature))
            ))
-    (setf str (format nil "This ~(~A~) has the following features:~A" (get-settlement-size-name settlement) str))))
+    (setf str (format nil "This ~(~A~) has the following places of interest:~A" (get-settlement-size-name settlement) str))))
 
 (defun show-settlement-events (settlement)
   (let ((str (create-string)) (event) (start t))
