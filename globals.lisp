@@ -96,6 +96,12 @@
 (defconstant +ruler-favor-win+ 10)
 
 (defconstant +feature-type-palace+ 0)
+(defconstant +feature-type-farm+ 1)
+(defconstant +feature-type-craftshop+ 2)
+(defconstant +feature-type-jewelshop+ 3)
+(defconstant +feature-type-weaponshop+ 4)
+(defconstant +feature-type-mine+ 5)
+(defconstant +feature-type-population+ 6)
 
 (defconstant +event-type-famine+ 0)
 

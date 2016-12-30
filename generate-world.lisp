@@ -4,6 +4,7 @@
 (defparameter *max-y-world* 20)
 
 (defun generate-world (settlements traders &optional (max-settlements 5))
+  (declare (ignore traders))
   (let ((pc-trader nil) (edges nil)
         (realm-human)
         (realm-tachidi)
@@ -113,15 +114,16 @@
             (setf (settlement-type settlement) +settlement-type-industry+))
            ((= (settlement-size settlement) +settlement-size-city+)
             (setf (settlement-type settlement) +settlement-type-sprawling+)
-            (set-settlement-palace settlement)))
+            ))
 
          ;; set realm
          (setf (realm-id settlement) realm-id)
          (setf (race-type settlement) cur-settlement-race)
          
          
-         (initialize-produce-consume settlement)
          (initialize-demand-supply settlement)
+         (initialize-features settlement)
+         (initialize-current-demand-supply settlement)
 
          ;;(add-event-settlement settlement (make-instance 'event :event-type-id +event-type-famine+))
          

@@ -7,7 +7,7 @@
   (loop
     for settlement being the hash-value in *settlements*
     do
-       (adjust-settlement-items settlement)
+       (adjust-settlement-features settlement)
        (adjust-settlement-prices settlement)
        (adjust-settlement-events settlement)
     )
@@ -18,43 +18,6 @@
        (adjust-realm realm)
     )
   (incf (wtime *world*)))
-
-(defun adjust-settlement-items (settlement)
-  (let ((items-produce (items-produce settlement))
-        (items-consume (items-consume settlement))
-        )
-    ;;(format t "~%ADJUST-SETTLEMENT-ITEMS: ~A~%" (name settlement))
-    ;; set up production and consumptions for the settlement
-    
-    ;; iterate through the production to add items to the marketplace
-    (loop
-      for prod-cons in items-produce
-      with qty-value = 0
-      with item-type-id = 0
-      do
-         (setf item-type-id (car prod-cons))
-         (setf qty-value (if (> (cdr prod-cons) 0)
-                           (cdr prod-cons)
-                           0))
-         (unless (zerop qty-value)
-           (add-to-inv item-type-id (market settlement) qty-value))
-      )
-    ;; iterate through the consumptions to remove items from the marketplace
-    (loop
-      for cons-cons in items-consume
-      with qty-value = 0
-      with item-type-id = 0
-      do
-         (setf item-type-id (car cons-cons))
-         (setf qty-value (if (> (cdr cons-cons) 0)
-                           (cdr cons-cons)
-                           0))
-         (unless (zerop qty-value)
-           (remove-from-inv item-type-id (market settlement) qty-value)
-           ))
-      )
-    
-    )
 
 (defun adjust-settlement-prices (settlement)
   (loop
@@ -69,7 +32,7 @@
        (setf cur-demand (get-settlement-cur-demand settlement item-type-id))
        (setf cur-supply (get-settlement-cur-supply settlement item-type-id))
        
-       (format t "~%ADJUST-SETTLEMENT-PRICES: ~A, ~A, DELTA-DEMAND ~A, DELTA-SUPPLY ~A~%" (name settlement) (name (get-item-type-by-id item-type-id)) (- base-demand cur-demand) (- base-supply cur-supply))
+       ;;(format t "~%ADJUST-SETTLEMENT-PRICES: ~A, ~A, DELTA-DEMAND ~A, DELTA-SUPPLY ~A~%" (name settlement) (name (get-item-type-by-id item-type-id)) (- base-demand cur-demand) (- base-supply cur-supply))
 
        (cond
          ((> (- base-demand cur-demand) 0)
@@ -120,4 +83,17 @@
              (when (> (stage event) (max-stage event))
                (remove-event-settlement settlement (event-type-id event)))
              ))
+         ))
+
+
+(defun adjust-settlement-features (settlement)
+  (loop 
+      for feature-type-id in (features settlement)
+      with feature = nil
+      do
+         (setf feature (get-feature-type-by-id feature-type-id))
+                  
+         (when (on-tick feature)
+           (funcall (on-tick feature) feature settlement)
+           )
          ))

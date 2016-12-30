@@ -6,9 +6,10 @@
     0))
 
 (defun add-to-inv (item-type-id inv qty)
-  (if (gethash item-type-id inv) 
-    (incf (gethash item-type-id inv) qty)
-    (setf (gethash item-type-id inv) qty))
+  (when (> qty 0)
+    (if (gethash item-type-id inv) 
+      (incf (gethash item-type-id inv) qty)
+      (setf (gethash item-type-id inv) qty)))
   )
 
 (defun remove-from-inv (item-type-id inv qty)
