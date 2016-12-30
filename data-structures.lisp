@@ -27,6 +27,8 @@
    (features :initform () :initarg :features :accessor features) ;; list of +feature-type-...+ constants
 
    (events :initform (make-hash-table) :accessor events)
+
+   (journal :initform () :initarg :journal :accessor journal) ;; see journal.lisp
    
    (realm-id :initform nil :initarg :realm-id :accessor realm-id)
    (settlement-type :initform 0 :initarg :settlement-type :accessor settlement-type)
@@ -169,6 +171,7 @@
    (current-settlement-id :initform nil :initarg :current-settlement-id :accessor current-settlement-id)
    (inv :initform (make-hash-table) :accessor inv)
    (money :initform 0 :initarg :money :accessor money)
+   (journal :initform () :initarg :journal :accessor journal)
    ))
 
 (defmethod initialize-instance :after ((trader trader) &key)
@@ -310,7 +313,9 @@
   ;; if the event has on-rotate function defined, it should be also added to the rotational events table, otherwise add to random events table 
   (if (on-rotate event-type)
     (setf (gethash event-type-id *event-rotate-types*) event-type)
-    (setf (gethash event-type-id *event-random-types*) event-type))
+    (unless (find (id event-type) *event-random-types*)
+      (pushnew (id event-type) *event-random-types*)
+      ))
   )
 
 (defun get-event-type-by-id (event-type-id)
@@ -398,6 +403,11 @@
           (name trader) (id trader) 
           (name (get-settlement-by-id (current-settlement-id trader))) (current-settlement-id trader) 
           (name new-settlement) (id new-settlement))
+  
+  (setf (journal trader) (add-to-journal (journal trader) :date (wtime *world*) :importance +journal-importance-low+ 
+                                                          :string (format nil "We departed from ~A and travelled to ~A." 
+                                                                          (name (get-settlement-by-id (current-settlement-id trader))) 
+                                                                          (name new-settlement))))
   (setf (current-settlement-id trader) (id new-settlement))
   (decf (action-done trader) days))
 

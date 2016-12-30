@@ -96,10 +96,11 @@
       (sdl:draw-string-solid-* str (+ x (sdl:char-width font) *sel-x-offset*) (+ y (* i (+ (sdl:char-height font) *sel-y-offset*))) :font font :color color))
     ;; draw a scroll bar when necessary
     (when (> (length str-list) str-per-page)
-      (sdl:draw-string-solid-* "*" x (+ y (* (+ (sdl:char-height font) *sel-y-offset*) (round (* (/ cur-str (length str-list)) str-per-page)))) :font font :color sdl:*white*))))
+      (sdl:draw-string-solid-* "*" x (+ y (* (+ (sdl:char-height font) *sel-y-offset*) (truncate (* (/ cur-str (length str-list)) str-per-page)))) :font font :color sdl:*white*))))
 
 (defun draw-multiline-selection-list (item-list cur-item x y w h &optional (color-list ()))
   (sdl:with-rectangle (rect (sdl:rectangle :x x :y y :w (- w 12) :h h))  
+    ;;(format t "~%")
     (let ((screen-list ()) (start-item) (is-more-than-one-screen nil))
       ;; assign numbers of screens to the items pertaining to them
       (let ((screen-i 0) (item-h) (is-first t))
@@ -107,6 +108,8 @@
 	(dotimes (i (length item-list))
 	  (setf item-h (* 13 (write-text (nth i item-list) rect :count-only t)))
 	  
+          ;;(format t "BEFORE I ~A, ITEM-H ~A, RECT HEIGHT ~A, SCREEN-I ~A~%" i item-h (sdl:height rect) screen-i)
+          
 	  (if (or (> (sdl:height rect) item-h) (and is-first (<= (sdl:height rect) item-h)))
 	      (progn
 		(setf screen-list (append screen-list (list screen-i)))
@@ -124,7 +127,11 @@
 		(setf screen-list (append screen-list (list screen-i)))
 		(setf (sdl:y rect) y)
 		(setf (sdl:height rect) h)
+                (incf (sdl:y rect) item-h)
+                (decf (sdl:height rect) item-h)
 		(setf is-first t)))
+          
+          ;;(format t "AFTER I ~A, ITEM-H ~A, RECT HEIGHT ~A, MAX H ~A, SCREEN-I ~A~%" i item-h (sdl:height rect) h screen-i)
 	  ))
       
       ;; find the screen by current item
@@ -156,12 +163,17 @@
 		(return)))))
       ;; draw scroll bar when necessary
       (when is-more-than-one-screen
-	(sdl:draw-string-solid-* "*" (- (+ x w) 12) (+ y (round (* h (/ cur-item (length item-list))))) :color sdl:*white*)))))
+	(sdl:draw-string-solid-* "*" (- (+ x w) 12) (+ y (truncate (* h (/ cur-item (length item-list))))) :color sdl:*white*)))))
 
 (defun run-selection-list (key mod unicode cur-str)
+  (declare (ignore unicode))
   (cond
     ((and (sdl:key= key :sdl-key-up) (= mod 0)) (decf cur-str))
-    ((and (sdl:key= key :sdl-key-down) (= mod 0)) (incf cur-str)))
+    ((and (sdl:key= key :sdl-key-down) (= mod 0)) (incf cur-str))
+    ((and (sdl:key= key :sdl-key-up) (/= (logand mod sdl-cffi::sdl-key-mod-shift) 0)) (decf cur-str 10))
+    ((and (sdl:key= key :sdl-key-down) (/= (logand mod sdl-cffi::sdl-key-mod-shift) 0)) (incf cur-str 10))
+    ((and (sdl:key= key :sdl-key-pagedown) (= mod 0)) (incf cur-str 10))
+    ((and (sdl:key= key :sdl-key-pageup) (= mod 0)) (decf cur-str 10)))
   cur-str)
 
 (defun adjust-selection-list (cur-str max-str)

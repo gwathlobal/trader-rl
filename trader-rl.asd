@@ -17,6 +17,7 @@
     (
      (:file "globals")
      (:file "time")
+     (:file "journal" :depends-on ("time"))
      (:file "data-structures")
      (:file "inventory")
      (:file "world")
@@ -31,5 +32,6 @@
      (:file "window-marketplace" :depends-on ("base-window"))
      (:file "window-win-game" :depends-on ("base-window"))
      (:file "window-capital" :depends-on ("base-window"))
+     (:file "window-journal" :depends-on ("base-window"))
      (:file "trader-rl")
      ))

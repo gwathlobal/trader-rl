@@ -7,6 +7,7 @@
        (adjust-settlement-features settlement)
        (adjust-settlement-prices settlement)
        (adjust-settlement-events settlement)
+       (adjust-settlement-journal settlement)
     )
 
   (loop
@@ -14,6 +15,13 @@
     do
        (adjust-realm realm)
     )
+
+  (loop
+    for trader being the hash-value in *traders*
+    do
+       (adjust-trader-journal trader)
+    )
+  
   (incf (wtime *world*)))
 
 (defun adjust-settlement-prices (settlement)
@@ -65,7 +73,7 @@
   ;; in case of 1 in 40 chance 
   (when (zerop (random 40))
     ;; select a random event
-    (let ((event-type (get-event-type-by-id (random (hash-table-count *event-random-types*))))
+    (let ((event-type (get-event-type-by-id (random (length *event-random-types*))))
           (passed nil))
       ;; if the event has no on-rand function - it always applies
       ;; if the event has the on-rand function, check if the conditions are met
@@ -123,3 +131,18 @@
            (funcall (on-tick feature) feature settlement)
            )
          ))
+
+(defun adjust-trader-journal (trader)
+  (setf (journal trader) (merge-journals (journal trader) 
+                                         (journal (get-settlement-by-id (current-settlement-id trader)))))
+  )
+
+(defun adjust-settlement-journal (settlement)
+  (setf (journal settlement) (remove-if #'(lambda (entry)
+                                            (if (> (- (wtime *world*) (get-journal-entry-date entry))
+                                                   (* (1+ (get-journal-entry-importance entry)) 
+                                                      (* +days-in-month+ +months-in-year+)))
+                                              t
+                                              nil)) 
+                                        (journal settlement)))
+  )

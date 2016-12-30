@@ -18,6 +18,14 @@
                                                                                   )
                                                                      :on-tick #'(lambda (event settlement)
                                                                                   (format t "ON-TICK ~A ~A~%" (name settlement) (descr event))
+                                                                                  
+                                                                                  (when (zerop (stage event))
+                                                                                    (setf (journal settlement) 
+                                                                                          (add-to-journal (journal settlement) :date (wtime *world*) :importance +journal-importance-high+ 
+                                                                                                                               :string (format nil "The ~(~A~) of ~A was struck by famine!" 
+                                                                                                                                               (get-settlement-size-name settlement) 
+                                                                                                                                               (name settlement)))))
+                                                                                  
                                                                                   (incf (stage event))
                                                                                   
                                                                                   (when (<= (stage event) (- (max-stage event) 3))
@@ -51,6 +59,13 @@
 (set-event-type-by-id +event-type-harvest+ (make-instance 'event-type :descr "This settlement was blessed with plentiful harvest!" :max-stage 5
                                                                       :on-tick #'(lambda (event settlement)
                                                                                    (format t "ON-TICK ~A ~A~%" (name settlement) (descr event))
+                                                                                   
+                                                                                   (when (zerop (stage event))
+                                                                                     (setf (journal settlement) 
+                                                                                           (add-to-journal (journal settlement) :date (wtime *world*) :importance +journal-importance-low+ 
+                                                                                                                                :string (format nil "The ~(~A~) of ~A was blessed with plentiful harvest." 
+                                                                                                                                                (get-settlement-size-name settlement) 
+                                                                                                                                                (name settlement)))))
                                                                                    (incf (stage event))
                                                                                    
                                                                                    (add-to-inv +item-type-food+ (market settlement) 50)
@@ -74,6 +89,13 @@
 (set-event-type-by-id +event-type-ore-deposit+ (make-instance 'event-type :descr "The miners have found a rich ore vein!" :max-stage 5
                                                                       :on-tick #'(lambda (event settlement)
                                                                                    (format t "ON-TICK ~A ~A~%" (name settlement) (descr event))
+
+                                                                                   (when (zerop (stage event))
+                                                                                     (setf (journal settlement) 
+                                                                                           (add-to-journal (journal settlement) :date (wtime *world*) :importance +journal-importance-low+ 
+                                                                                                                                :string (format nil "The miners of the ~(~A~) of ~A found a rich ore vein." 
+                                                                                                                                                (get-settlement-size-name settlement) 
+                                                                                                                                                (name settlement)))))
                                                                                    (incf (stage event))
                                                                                    
                                                                                    (add-to-inv +item-type-ore+ (market settlement) 50)
@@ -94,6 +116,14 @@
 (set-event-type-by-id +event-type-gem-deposit+ (make-instance 'event-type :descr "The miners have found a gem deposit!" :max-stage 5
                                                                       :on-tick #'(lambda (event settlement)
                                                                                    (format t "ON-TICK ~A ~A~%" (name settlement) (descr event))
+
+                                                                                   (when (zerop (stage event))
+                                                                                     (setf (journal settlement) 
+                                                                                           (add-to-journal (journal settlement) :date (wtime *world*) :importance +journal-importance-low+ 
+                                                                                                                                :string (format nil "The miners of the ~(~A~) of ~A found a gem deposit." 
+                                                                                                                                                (get-settlement-size-name settlement) 
+                                                                                                                                                (name settlement)))))
+
                                                                                    (incf (stage event))
                                                                                    
                                                                                    (add-to-inv +item-type-gems+ (market settlement) 20)

@@ -17,6 +17,10 @@
                  #'(lambda (n) (declare (ignore n)) (decf (action-done *player*))))
            (win-actions win))
 
+  (pushnew (cons "View journal"
+                 #'(lambda (n) (declare (ignore n)) (setf *current-window* (make-instance 'journal-window :journal (journal *player*)))))
+           (win-actions win))
+  
   (let ((player-settlement (get-settlement-by-id (current-settlement-id *player*))))
     (when (get-settlement-feature player-settlement +feature-type-palace+)
       (pushnew (cons (format nil "Visit the palace") 
@@ -59,7 +63,7 @@
 
     ;; output help prompt
     (sdl:with-default-font ((sdl:initialise-default-font sdl:*font-6x13*))
-      (write-text (format nil "[Enter] Perform action") (sdl:rectangle :x 0 :y (+ 0 (* cur-line 13) (* 10 13)) :w 800 :h 20)))
+      (write-text (format nil "[Enter] Perform action [J] View journal") (sdl:rectangle :x 0 :y (+ 0 (* cur-line 13) (* 10 13)) :w 800 :h 20)))
     
     )
   (sdl:update-display))
@@ -74,7 +78,8 @@
                           ((sdl:key= key :sdl-key-return)
                            (when (cdr (nth (cur-sel win) (win-actions win)))
                              (funcall (cdr (nth (cur-sel win) (win-actions win))) (cur-sel win))))
-                          
+                          ((sdl:key= key :sdl-key-j)
+                           (setf *current-window* (make-instance 'journal-window :journal (journal *player*))))
 			  )
 			(make-output *current-window*)
        			(go exit-func)

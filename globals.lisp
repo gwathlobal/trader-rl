@@ -117,7 +117,7 @@
 (defparameter *quest-types* (make-hash-table))
 (defparameter *feature-types* (make-hash-table))
 (defparameter *event-types* (make-hash-table))
-(defparameter *event-random-types* (make-hash-table))
+(defparameter *event-random-types* ())
 (defparameter *event-rotate-types* (make-hash-table))
 
 (defparameter *player* nil)
