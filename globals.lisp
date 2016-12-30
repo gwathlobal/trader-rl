@@ -104,6 +104,9 @@
 (defconstant +feature-type-population+ 6)
 
 (defconstant +event-type-famine+ 0)
+(defconstant +event-type-harvest+ 1)
+(defconstant +event-type-ore-deposit+ 2)
+(defconstant +event-type-gem-deposit+ 3)
 
 (defparameter *item-types* (make-hash-table))
 (defparameter *settlements* (make-hash-table))
@@ -114,6 +117,8 @@
 (defparameter *quest-types* (make-hash-table))
 (defparameter *feature-types* (make-hash-table))
 (defparameter *event-types* (make-hash-table))
+(defparameter *event-random-types* (make-hash-table))
+(defparameter *event-rotate-types* (make-hash-table))
 
 (defparameter *player* nil)
 (defparameter *world* nil)

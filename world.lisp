@@ -64,26 +64,55 @@
   )
 
 (defun adjust-settlement-events (settlement)
-  ;; add a new event
+  ;; add a new random event
+  ;; in case of 1 in 40 chance 
   (when (zerop (random 40))
-    (add-event-settlement settlement (make-instance 'event :event-type-id (random (hash-table-count *event-types*)))))
+    ;; select a random event
+    (let ((event-type (get-event-type-by-id (random (hash-table-count *event-random-types*))))
+          (passed nil))
+      ;; if the event has no on-rand function - it always applies
+      ;; if the event has the on-rand function, check if the conditions are met
+      (unless (on-rand event-type)
+        (setf passed t))
+      (when (and (on-rand event-type)
+                 (funcall (on-rand event-type) event-type settlement))
+        (setf passed t))
+      
+      (format t "SETTLEMENT ~A, PASSED ~A, GET-EVENT ~A~%" (name settlement) passed (get-event-settlement settlement (id event-type)))
+      
+      ;; if the conditions are met & there is no similair event, add the event
+      (when (and passed
+                 (not (get-event-settlement settlement (id event-type))))
+        (add-event-settlement settlement (make-instance 'event :event-type-id (id event-type))))))
 
+  ;; check all rotational events to see if they are applicable
+  (loop
+    for event-type being the hash-value in *event-rotate-types*
+    do
+       (format t "EVENT ROTATE, SETTLEMENT ~A, PASSED ~A, GET-EVENT ~A~%" (name settlement) (funcall (on-rotate event-type) event-type settlement) (get-event-settlement settlement (id event-type)))
+
+       (when (and (funcall (on-rotate event-type) event-type settlement)
+                  (not (get-event-settlement settlement (id event-type))))
+         (add-event-settlement settlement (make-instance 'event :event-type-id (id event-type)))))
+  
   ;; process existing events
   (loop 
-      for event-type-id being the hash-key in (events settlement)
-      with event = nil
-      do
-         
-         (setf event (get-event-settlement settlement event-type-id))
-                  
-         (if (on-tick event)
-           (funcall (on-tick event) event settlement)
-           (progn
-             (incf (stage event))
-             (when (> (stage event) (max-stage event))
-               (remove-event-settlement settlement (event-type-id event)))
-             ))
-         ))
+    for event-type-id being the hash-key in (events settlement)
+    with event = nil
+    do
+       
+       (setf event (get-event-settlement settlement event-type-id))
+       
+       ;; if the event-type has its own on-tick function, call it and let it do the removal 
+       ;; otherwise tick and remove event explicitly
+       (if (on-tick event)
+         (funcall (on-tick event) event settlement)
+         (progn
+           (incf (stage event))
+           (when (> (stage event) (max-stage event))
+             (remove-event-settlement settlement (event-type-id event)))
+           ))
+    ))
 
 
 (defun adjust-settlement-features (settlement)

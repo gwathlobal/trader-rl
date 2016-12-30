@@ -20,6 +20,8 @@
      (:file "inventory")
      (:file "world")
      (:file "init-world-types")
+     (:file "init-feature-types")
+     (:file "init-event-types")
      (:file "generate-world")
      (:file "base-window")
      (:file "window-intro" :depends-on ("base-window"))

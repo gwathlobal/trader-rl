@@ -65,8 +65,6 @@
     for item-type being the hash-value in *item-types*
     do
        (setf (gethash (id item-type) (base-demand-supply settlement)) (cons 0 0)))
-  
-  
   )
 
 (defun initialize-current-demand-supply (settlement)
@@ -299,12 +297,21 @@
   ((id :initform nil :accessor id)
    (descr :initform "" :initarg :descr :accessor descr)
    (max-stage :initform 5 :initarg :max-stage :accessor max-stage)
-   (on-tick :initform nil :initarg :on-tick :accessor on-tick)
-   (on-show :initform nil :initarg :on-show :accessor on-show)))
+   (on-tick :initform nil :initarg :on-tick :accessor on-tick) ;; when the event is active, invoke every turn
+   (on-show :initform nil :initarg :on-show :accessor on-show) ;; invoke when the list of events is being displayed to determine how to show the event description
+   (on-rand :initform nil :initarg :on-rand :accessor on-rand) ;; invoke when a random event is triggered to check if the conditions are applicable
+   (on-rotate :initform nil :initarg :on-rotate :accessor on-rotate) ;; if set, the event type becomes non-random; the function invokes every turn to check if the conditions are met and the event should apply 
+   ))
 
 (defun set-event-type-by-id (event-type-id event-type)
   (setf (id event-type) event-type-id)
-  (setf (gethash event-type-id *event-types*) event-type))
+  (setf (gethash event-type-id *event-types*) event-type)
+  
+  ;; if the event has on-rotate function defined, it should be also added to the rotational events table, otherwise add to random events table 
+  (if (on-rotate event-type)
+    (setf (gethash event-type-id *event-rotate-types*) event-type)
+    (setf (gethash event-type-id *event-random-types*) event-type))
+  )
 
 (defun get-event-type-by-id (event-type-id)
   (gethash event-type-id *event-types*))
@@ -328,6 +335,12 @@
 
 (defmethod on-tick ((event event))
   (on-tick (get-event-type-by-id (event-type-id event))))
+
+(defmethod on-rand ((event event))
+  (on-rand (get-event-type-by-id (event-type-id event))))
+
+(defmethod on-rotate ((event event))
+  (on-rotate (get-event-type-by-id (event-type-id event))))
 
 (defmethod max-stage ((event event))
   (max-stage (get-event-type-by-id (event-type-id event))))
