@@ -14,12 +14,14 @@
     for realm being the hash-value in *realms*
     do
        (adjust-realm realm)
+       (adjust-realm-quests realm)
     )
 
   (loop
     for trader being the hash-value in *traders*
     do
        (adjust-trader-journal trader)
+       (adjust-trader-quests trader)
     )
   
   (incf (wtime *world*)))
@@ -143,11 +145,6 @@
            )
          ))
 
-(defun adjust-trader-journal (trader)
-  (setf (journal trader) (merge-journals (journal trader) 
-                                         (journal (get-settlement-by-id (current-settlement-id trader)))))
-  )
-
 (defun adjust-settlement-journal (settlement)
   (setf (journal settlement) (remove-if #'(lambda (entry)
                                             (if (> (- (wtime *world*) (get-journal-entry-date entry))
@@ -157,3 +154,33 @@
                                               nil)) 
                                         (journal settlement)))
   )
+
+(defun adjust-trader-journal (trader)
+  (setf (journal trader) (merge-journals (journal trader) 
+                                         (journal (get-settlement-by-id (current-settlement-id trader)))))
+  )
+
+(defun adjust-trader-quests (trader)
+  (loop 
+    for quest-id in (quests trader)
+    with quest = nil
+    do
+       (setf quest (get-quest-by-id quest-id))
+       (when (or (= (stage quest) +quest-stage-completed+)
+                 (= (stage quest) +quest-stage-failed+))
+         (setf (quests trader) (remove-from-quests (quests trader) quest-id))
+         (remove-quest-from-world quest-id))
+    )
+  )
+
+(defun adjust-realm-quests (realm)
+  (loop 
+    for quest-id in (quests realm)
+    with quest = nil
+    do
+       (setf quest (get-quest-by-id quest-id))
+       (when (and (= (stage quest) +quest-stage-new+)
+                  (eq (get-event-by-id (event-id quest)) nil))
+         (setf (quests realm) (remove-from-quests (quests realm) quest-id))
+         (remove-quest-from-world quest-id))
+    ))

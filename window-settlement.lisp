@@ -10,18 +10,21 @@
   
   
   (pushnew (cons "Leave the place" 
-                 #'(lambda (n) (declare (ignore n)) (setf *current-window* (make-instance 'leave-settlement-window)))) 
+                 #'(lambda (n) (declare (ignore n)) (setf *current-window* (make-instance 'leave-settlement-window))
+                           (generate-win-actions win))) 
            (win-actions win))
 
   (pushnew (cons "Wait 1 day"
-                 #'(lambda (n) (declare (ignore n)) (decf (action-done *player*))))
+                 #'(lambda (n) (declare (ignore n)) (decf (action-done *player*))
+                           (generate-win-actions win)))
            (win-actions win))
 
   (pushnew (cons "View journal"
-                 #'(lambda (n) (declare (ignore n)) (setf *current-window* (make-instance 'journal-window :journal (journal *player*)))))
+                 #'(lambda (n) (declare (ignore n)) (setf *current-window* (make-instance 'journal-window :journal (journal *player*) :quests (generate-quest-journal (quests *player*))))))
            (win-actions win))
   
-  (let ((player-settlement (get-settlement-by-id (current-settlement-id *player*))))
+  (let ((player-settlement (get-settlement-by-id (current-settlement-id *player*)))
+        (available-commands nil))
     (when (get-settlement-feature player-settlement +feature-type-palace+)
       (pushnew (cons (format nil "Visit the palace") 
                      #'(lambda (n) (declare (ignore n)) (setf *current-window* (make-instance 'palace-window)))) 
@@ -29,7 +32,45 @@
         
     (pushnew (cons (format nil "Visit the marketplace") 
                    #'(lambda (n) (declare (ignore n)) (setf *current-window* (make-instance 'marketplace-window)))) 
-             (win-actions win)))
+             (win-actions win))
+    
+    ;; iterate through all player's quests to create a list of quests that can be completed
+    (loop 
+      for quest-id in (quests *player*)
+      with quest = nil
+      do
+         (setf quest (get-quest-by-id quest-id))
+
+         (format t "AVAILABLE COMMANDS, STAGE ~A, ON-CHECK-COMPLETE ~A~%" (stage quest) (funcall (on-check-complete quest) quest))
+         
+         (when (and (= (stage quest) +quest-stage-accepted+)
+                    (on-check-complete quest)
+                    (funcall (on-check-complete quest) quest))
+           (setf available-commands (append available-commands (list quest-id)))))
+    
+    
+    
+    (loop
+      for quest-id in available-commands
+      with quest = nil
+      do
+         (setf quest (get-quest-by-id quest-id))
+         (pushnew (cons (complete-descr quest) 
+                        #'(lambda (n) 
+                                                        
+                            (setf (journal *player*) (add-to-journal (journal *player*) :date (wtime *world*) :importance +journal-importance-high+ 
+                                                                                        :string (format nil "I have completed the quest - ~A" (descr (get-quest-by-id (get-n-quest-in-list available-commands n))) 
+                                                                                                        )))
+                            (setf (stage (get-quest-by-id (get-n-quest-in-list available-commands n)))
+                                  +quest-stage-completed+)
+                            (when (on-complete (get-quest-by-id (get-n-quest-in-list available-commands n)))
+                              (funcall (on-complete (get-quest-by-id (get-n-quest-in-list available-commands n)))
+                                       (get-quest-by-id (get-n-quest-in-list available-commands n))))
+                            (generate-win-actions win))) 
+                  (win-actions win))
+           )
+    
+    )
   )
 
 (defmethod make-output ((win settlement-window))
@@ -79,7 +120,7 @@
                            (when (cdr (nth (cur-sel win) (win-actions win)))
                              (funcall (cdr (nth (cur-sel win) (win-actions win))) (cur-sel win))))
                           ((sdl:key= key :sdl-key-j)
-                           (setf *current-window* (make-instance 'journal-window :journal (journal *player*))))
+                           (setf *current-window* (make-instance 'journal-window :journal (journal *player*) :quests (generate-quest-journal (quests *player*)))))
 			  )
 			(make-output *current-window*)
        			(go exit-func)

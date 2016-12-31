@@ -28,7 +28,7 @@
 
    (events :initform (make-hash-table) :accessor events)
 
-   (journal :initform () :initarg :journal :accessor journal) ;; see journal.lisp
+   (journal :initform () :initarg :journal :accessor journal) ;; list of journal entries, see journal.lisp
    
    (realm-id :initform nil :initarg :realm-id :accessor realm-id)
    (settlement-type :initform 0 :initarg :settlement-type :accessor settlement-type)
@@ -178,7 +178,7 @@
 
 (defun get-settlement-descr-for-player (settlement)
   (let ((str (create-string)))
-    (format str "You are in the ~A ~(~A~) of ~A~%." (get-settlement-type-adj settlement) (get-settlement-size-name settlement) (name settlement))
+    (format str "You are in the ~A ~(~A~) of ~A.~%" (get-settlement-type-adj settlement) (get-settlement-size-name settlement) (name settlement))
     (format str "It is a ~(~A~) ~(~A~).~%" (nth (race-type settlement) *race-names*) (get-settlement-size-name settlement))
     
     (when (features settlement)
@@ -201,12 +201,16 @@
    (inv :initform (make-hash-table) :accessor inv)
    (money :initform 0 :initarg :money :accessor money)
    (journal :initform () :initarg :journal :accessor journal)
+   (quests :initform () :initarg :quests :accessor quests)
    ))
 
 (defmethod initialize-instance :after ((trader trader) &key)
   (setf (id trader) (find-free-id *traders*))
   (setf (gethash (id trader) *traders*) trader)
   )
+
+(defun get-trader-by-id (trader-id)
+  (gethash trader-id *traders*))
 
 ;; ==============================
 
@@ -240,6 +244,7 @@
    (audience :initform nil :accessor audience)
    (cur-quest :initform nil :initarg :cur-quest :accessor cur-quest)
    (quest-timer :initform 0 :accessor quest-timer)
+   (quests :initform () :accessor quests) ;; list of quests, see quests.lisp
    ))
 
 (defmethod initialize-instance :after ((realm realm) &key)
@@ -248,6 +253,9 @@
 
   (setf (ruler-title realm) (nth (random (length *ruler-title-names*)) *ruler-title-names*))
   )
+
+(defun get-realm-by-id (realm-id)
+  (gethash realm-id *realms*))
 
 (defclass realm-human (realm)
   ())
@@ -291,20 +299,7 @@
   (setf (ruler-male realm) t)
   (setf (ruler-name realm) (format nil "~A'~A" (nth (random (length *ruler-saurian-first-names*)) *ruler-saurian-first-names*) (nth (random (length *ruler-saurian-last-names*)) *ruler-saurian-last-names*))))
 
-;; ==============================
 
-(defclass quest-type ()
-  ((id :initform nil :accessor id)
-   (intro-str :initarg :intro-str :accessor intro-str)
-   (quest-item-id :initarg :quest-item-id :accessor quest-item-id)
-   (quest-item-num :initarg :quest-item-num :accessor quest-item-num)))
-
-(defun set-quest-type-by-id (quest-type-id quest-type)
-  (setf (id quest-type) quest-type-id)
-  (setf (gethash quest-type-id *quest-types*) quest-type))
-
-(defun get-quest-type-by-id (quest-type-id)
-  (gethash quest-type-id *quest-types*))
 
 ;; ==============================
 
@@ -361,6 +356,9 @@
   (setf (id event) (find-free-id *events*))
   (setf (gethash (id event) *events*) event)
   )
+
+(defun get-event-by-id (event-id)
+  (gethash event-id *events*))
 
 (defmethod descr ((event event))
   (descr (get-event-type-by-id (event-type-id event))))

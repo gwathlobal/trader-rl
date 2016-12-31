@@ -23,6 +23,54 @@
            (win-actions win))
     )
   
+  (when (and (>= (ruler-favor (get-settlement-realm (get-settlement-by-id (current-settlement-id *player*)))) +ruler-favor-win+) 
+             (audience (get-settlement-realm (get-settlement-by-id (current-settlement-id *player*)))))
+    (pushnew (cons (format nil "Ask the ruler to grant you the position of Master Treasurer") 
+                   #'(lambda (n) (declare (ignore n))
+                       (setf *current-window* (make-instance 'win-game-window))
+                       )) 
+           (win-actions win))
+    )
+  (let ((realm (get-settlement-realm (get-settlement-by-id (current-settlement-id *player*))))
+        (available-quest-list nil))
+    (loop 
+      for quest-id in (quests realm)
+      with quest = nil
+      do
+         (setf quest (get-quest-by-id quest-id))
+         (when (= (stage quest) +quest-stage-new+)
+           (setf available-quest-list (append available-quest-list (list quest-id)))))
+    
+    (loop
+      for quest-id in available-quest-list
+      with quest = nil
+      do
+         (setf quest (get-quest-by-id quest-id))
+         (pushnew (cons (descr quest) 
+                        #'(lambda (n) 
+                            (format t "~%QUEST ACCEPTED ~A, ~A~%" 
+                                    (id (get-quest-by-id (get-n-quest-in-list available-quest-list n))) 
+                                    (descr (get-quest-by-id (get-n-quest-in-list available-quest-list n))))
+                            
+                            (setf (journal *player*) (add-to-journal (journal *player*) :date (wtime *world*) :importance +journal-importance-high+ 
+                                                                                        :string (format nil "I have accepted a quest. ~A" (descr (get-quest-by-id (get-n-quest-in-list available-quest-list n))) 
+                                                                                                        )))
+                            
+                            (setf (stage (get-quest-by-id (get-n-quest-in-list available-quest-list n)))
+                                  +quest-stage-accepted+)
+                            (setf (date (get-quest-by-id (get-n-quest-in-list available-quest-list n)))
+                                  (wtime *world*))
+                            (setf (quester-id (get-quest-by-id (get-n-quest-in-list available-quest-list n)))
+                                  (id *player*))
+                            (setf (quests *player*) (add-to-quests (quests *player*) (get-quest-by-id (get-n-quest-in-list available-quest-list n))))
+                            (generate-win-actions win))) 
+                  (win-actions win))
+           )
+      )
+  
+  
+  (return-from generate-win-actions nil)
+  
   (let ((cur-quest (cur-quest (get-settlement-realm (get-settlement-by-id (current-settlement-id *player*)))))
         (passed nil)
         (str))
@@ -60,14 +108,7 @@
   
   (format t "RULER-FAVOR ~A~%" (ruler-favor (get-settlement-realm (get-settlement-by-id (current-settlement-id *player*)))))
   
-  (when (and (>= (ruler-favor (get-settlement-realm (get-settlement-by-id (current-settlement-id *player*)))) +ruler-favor-win+) 
-             (audience (get-settlement-realm (get-settlement-by-id (current-settlement-id *player*)))))
-    (pushnew (cons (format nil "Ask the ruler to grant you the position of Master Treasurer") 
-                   #'(lambda (n) (declare (ignore n))
-                       (setf *current-window* (make-instance 'win-game-window))
-                       )) 
-           (win-actions win))
-    )
+  
   )
   
 
@@ -75,7 +116,11 @@
   ;; fill with black background
   (sdl:fill-surface sdl:*black*)
   
+  
+  
   (let ((str (create-string)) (cur-line 0) (player-settlement (get-settlement-by-id (current-settlement-id *player*))))
+  
+    (format t "~%QUESTS ~A~%" (quests (get-settlement-realm player-settlement)))
     
     ;; output palace info
     (format str "You are in the palace of ~A now.~%~%The ruler of the realm ~A Highness ~A the ~A resides here.~%~%" 

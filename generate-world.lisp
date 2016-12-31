@@ -11,7 +11,7 @@
         (realm-saurian)
         (realm-gremlin))
     ;; adding pc trader
-    (setf pc-trader (make-instance 'trader :name "Player" :money 50000))
+    (setf pc-trader (make-instance 'trader :name "Player" :money 1000))
     (setf *player* pc-trader)
     
     ;; creating edges for the connected graph of the settlements
@@ -151,6 +151,121 @@
     ;;     (format t "LINK id: ~A, dst id: ~A (~A)~%" (id i) (dst-id i) (name (gethash (dst-id i) *settlements*))))
     ;;(format t "LINK LENGTH ~A~%" (hash-table-count *links*))
     
+    nil))
+
+(defun generate-test-world (settlements traders &optional (max-settlements 5))
+  (declare (ignore traders))
+  (let ((pc-trader nil) (edges nil)
+        (realm-human)
+        )
+    ;; adding pc trader
+    (setf pc-trader (make-instance 'trader :name "Player" :money 50000))
+    (setf *player* pc-trader)
+    
+    ;; creating edges for the connected graph of the settlements
+    (loop
+      for i from 0 below max-settlements
+      do
+         ;; make a list of edges of type ((src-node-id dst-node-id) ...)
+         ;; always connect to the from the first node to the next node
+         (when (< (1+ i) max-settlements)
+           (setf edges (append edges (list (list i (1+ i))))))
+         ;; 30% chance to connect to any next node
+         (when (and (< (1+ i) max-settlements) (< (random 100) 30))
+           (setf edges (append edges (list (list i (+ i 1 (random (- (1- max-settlements) i))))))))
+         ;; 30% chance to connect to any previous node
+         (when (and (> i 0) (< (random 100) 30))
+           (setf edges (append edges (list (list i (random i))))))
+      )
+    
+    (setf realm-human (make-instance 'realm-human :ruler-race +race-type-human+))
+        
+    ;; adding settlements to world
+    (loop 
+      for i from 0 below max-settlements
+      with settlement = nil
+      with cur-settlement-race = 0
+      with settlement-name-list-human = (copy-list *settlement-human-names*)
+      with settlement-name-n = nil
+      with settlement-name = nil
+      with x = 0
+      with y = 0
+      with min-distance = 4
+      with realm-id = nil
+      do 
+         (setf cur-settlement-race +race-type-human+) 
+         (setf settlement-name-n (random (length settlement-name-list-human)))
+         (setf settlement-name (nth settlement-name-n settlement-name-list-human))
+         (setf settlement-name-list-human (remove (nth settlement-name-n settlement-name-list-human) settlement-name-list-human))
+         (setf realm-id (id realm-human))
+                   
+         ;;(format t "~%SETTLEMENT-NAME ~A, CUR-SETTLEMENT-RACE ~A, REALM-ID ~A~%")
+         
+         ;; find such location that the distance from all other already created locations is more than min-distance
+         (loop
+           with free-place-found = nil
+           until free-place-found
+           do
+              (setf x (random *max-x-world*))
+              (setf y (random *max-y-world*))
+              (setf free-place-found t)
+              (loop
+                for i-settlement being the hash-value in settlements
+                do
+                   (when (< (get-distance x y (x i-settlement) (y i-settlement)) min-distance)
+                     (setf free-place-found nil)
+                     (loop-finish)
+                     )))
+           
+         ;; create and add settlement to the world
+         (setf settlement (make-instance 'settlement :name settlement-name :x x :y y :settlement-size (random (1- (length *settlement-size-names*)))))
+
+         ;; make the last city the capital
+         (when (= i (1- max-settlements))
+           (setf (settlement-size settlement) +settlement-size-city+))
+         
+         ;; adjust settlement type based on size
+         (cond
+           ((= (settlement-size settlement) +settlement-size-village+)
+            (if (zerop (random 2))
+              (setf (settlement-type settlement) +settlement-type-agriculture+)
+              (setf (settlement-type settlement) +settlement-type-mining+)))
+           ((= (settlement-size settlement) +settlement-size-town+)
+            (setf (settlement-type settlement) +settlement-type-industry+))
+           ((= (settlement-size settlement) +settlement-size-city+)
+            (setf (settlement-type settlement) +settlement-type-sprawling+)
+            ))
+
+         ;; set realm
+         (setf (realm-id settlement) realm-id)
+         (setf (race-type settlement) cur-settlement-race)
+         
+         
+         (initialize-demand-supply settlement)
+         (initialize-features settlement)
+         (initialize-current-demand-supply settlement)
+
+         ;;(add-event-settlement settlement (make-instance 'event :event-type-id +event-type-famine+))
+         
+         ;; create 3 random items in the settlement market
+         (add-to-inv (random 9) (market settlement) (+ 5 (random 10)))
+         (add-to-inv (random 9) (market settlement) (+ 5 (random 10)))
+         (add-to-inv (random 9) (market settlement) (+ 5 (random 10)))
+         (add-to-inv  +item-type-food+ (market settlement) (+ 100 (random 100)))
+      
+         ;;(format t "S = ~A ~A ~%" (id settlement) (name settlement))
+      )
+
+    ;; adding links to each settlement
+    (loop
+      for edge in edges
+      do
+         ;;(format t "SRC NAME ~A~%" (name (gethash (first edge) settlements)))
+         (make-link (gethash (first edge) settlements) (gethash (second edge) settlements))   
+      )
+ 
+    (setf (current-settlement-id *player*) 0)
+        
     nil))
 
 (defun add-link-to-list (link-list link)

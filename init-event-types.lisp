@@ -24,7 +24,23 @@
                                                                                           (add-to-journal (journal settlement) :date (wtime *world*) :importance +journal-importance-high+ 
                                                                                                                                :string (format nil "The ~(~A~) of ~A was struck by famine!" 
                                                                                                                                                (get-settlement-size-name settlement) 
-                                                                                                                                               (name settlement)))))
+                                                                                                                                               (name settlement))))
+                                                                                    ;; add a quest to the realm ruler to deliver food to this settlement
+                                                                                    (let ((quest))
+                                                                                      (setf quest (make-instance 'quest-delivery 
+                                                                                                                 :quest-type-id +quest-type-delivery+
+                                                                                                                 :giver-id (id (get-settlement-realm settlement))
+                                                                                                                 :item-type-id +item-type-food+
+                                                                                                                 :qty 300
+                                                                                                                 :reward 1500
+                                                                                                                 :dst-id (id settlement)
+                                                                                                                 :event-id (id event)
+                                                                                                                 :date (wtime *world*)))
+                                                                                      
+                                                                                      (setf (quests (get-settlement-realm settlement)) 
+                                                                                            (add-to-quests (quests (get-settlement-realm settlement)) quest))
+                                                                                      )
+                                                                                    )
                                                                                   
                                                                                   (incf (stage event))
                                                                                   

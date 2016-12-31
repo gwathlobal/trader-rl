@@ -1,5 +1,9 @@
 (in-package :trader-rl)
 
+;; to facilitate debugging, a test world is generated in SLIME
+;; when creating an executable, this variable is set to normal world generator
+(defparameter *world-generator* #'generate-test-world)
+
 (defun game-loop ()
   (loop do
     (make-output *current-window*)
@@ -10,7 +14,7 @@
     (incf (action-done *player*))))
 
 (defun save-game ()
-  (let ((save-list (list *world* *settlements* *traders* *links* *realms* *events*)))
+  (let ((save-list (list *world* *settlements* *traders* *links* *realms* *events* *quests*)))
     (cl-store:store save-list (merge-pathnames "save" *current-dir*))
     ))
 
@@ -23,6 +27,7 @@
     (setf *links* (nth 3 load-list))
     (setf *realms* (nth 4 load-list))
     (setf *events* (nth 5 load-list))
+    (setf *quests* (nth 6 load-list))
     (setf *player* (gethash 0 *traders*))))
 
 (defun init-game ()
@@ -31,11 +36,13 @@
   (setf *links* (make-hash-table))
   (setf *realms* (make-hash-table))
   (setf *events* (make-hash-table))
+  (setf *quests* (make-hash-table))
   (setf *world* (make-instance 'world))
   )
 
 (defun start-new-game ()
-  (generate-world *settlements* *traders*)
+  (funcall *world-generator* *settlements* *traders*)
+
   (dotimes (n 10)
     (make-world-turn)))
 
@@ -132,6 +139,7 @@
   (cffi:use-foreign-library sdl)
 
   (setf *current-dir* *default-pathname-defaults*)
+  (setf *world-generator* #'generate-world)
   
   (sdl:with-init ()  
     (trader-rl-main))

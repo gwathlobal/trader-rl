@@ -92,6 +92,7 @@
 (defconstant +quest-type-gems-donation+ 2)
 (defconstant +quest-type-jewelry-donation+ 3)
 (defconstant +quest-type-food-donation+ 4)
+(defconstant +quest-type-delivery+ 5)
 
 (defconstant +ruler-favor-win+ 10)
 
@@ -122,6 +123,7 @@
 (defparameter *links* (make-hash-table))
 (defparameter *realms* (make-hash-table))
 (defparameter *events* (make-hash-table))
+(defparameter *quests* (make-hash-table))
 (defparameter *quest-types* (make-hash-table))
 (defparameter *feature-types* (make-hash-table))
 (defparameter *event-types* (make-hash-table))
