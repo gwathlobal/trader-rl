@@ -17,6 +17,7 @@
    (event-id :initform nil :initarg :event-id :accessor event-id)
    (date :initform 0 :initarg :date :accessor date)
    (reward :initform 0 :initarg :reward :accessor reward)
+   (move-to-market :initform t :initarg :move-to-market :accessor move-to-market)
    (on-check-complete :initform nil :accessor on-check-complete)
    (on-complete :initform nil :accessor on-complete)))
 
@@ -85,7 +86,8 @@
   (setf (on-complete quest) #'(lambda (quest)
                                 (let ((quester (get-trader-by-id (quester-id quest))))
                                   (remove-from-inv (item-type-id quest) (inv quester) (qty quest))
-                                  (add-to-inv (item-type-id quest) (market (get-settlement-by-id (dst-id quest))) (qty quest))
+                                  (when (move-to-market quest)
+                                    (add-to-inv (item-type-id quest) (market (get-settlement-by-id (dst-id quest))) (qty quest)))
                                   (incf (money quester) (reward quest))
                                   (setf (stage quest) +quest-stage-completed+)
                                   (incf (ruler-favor (get-realm-by-id (giver-id quest))) (1+ (random 2)))

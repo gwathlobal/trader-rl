@@ -33,6 +33,7 @@
                                                                                                                  :item-type-id +item-type-food+
                                                                                                                  :qty 300
                                                                                                                  :reward 1500
+                                                                                                                 :move-to-market t
                                                                                                                  :dst-id (id settlement)
                                                                                                                  :event-id (id event)
                                                                                                                  :date (wtime *world*)))
